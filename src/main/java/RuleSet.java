@@ -13,6 +13,12 @@ public class RuleSet {
     private final HashMap<String, Set<String>> depToConflicts = new HashMap<>();
     private final ArrayList<Conflict> conflicts = new ArrayList<>();
 
+    /**
+     * Register dependency to the structure
+     * "A depends on B", or "for A to be selected, B needs to be selected"
+     * @param a Target dependency
+     * @param b Dependent dependency
+     */
     public void addDep(String a, String b) {
         if (a.equals(b)) return;
         depToParents.computeIfAbsent(b, x -> new HashSet<>());
@@ -21,6 +27,14 @@ public class RuleSet {
         depToChildren.get(a).add(b);
     }
 
+    /**
+     * Register two conflicting dependencies
+     * "A and B are exclusive", or "B and A are exclusive"
+     * for A to be selected, B needs to be unselected;
+     * for B to be selected, A needs to be unselected
+     * @param a First dependency (A)
+     * @param b Second dependency (B)
+     */
     public void addConflict(String a, String b) {
         if (a.equals(b)) throw new IllegalArgumentException("Can not conflict with itself");
         conflicts.add(new Conflict(a, b));
@@ -84,6 +98,9 @@ public class RuleSet {
         return depToConflicts;
     }
 
+    /**
+     * Conflict structure just to keep conflicts
+     */
     private static class Conflict {
 
         private final String a;
