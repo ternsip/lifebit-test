@@ -3,29 +3,33 @@ import org.junit.Assert;
 
 import java.util.Set;
 
+/**
+ * These are unit tests for whole application, similar ones taken from opts_test.go, test.js or test.py
+ * All methods/functions have original names for convenience
+ */
 public class ApplicationTest extends TestCase {
 
-    public static void testDependsAA() {
+    public void testDependsAA() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "a");
         Assert.assertTrue(ruleSet.isCoherent());
     }
 
-    public static void testDependsAB_BA() {
+    public void testDependsAB_BA() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("b", "a");
         Assert.assertTrue(ruleSet.isCoherent());
     }
 
-    public static void testExclusiveAB() {
+    public void testExclusiveAB() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addConflict("a", "b");
         Assert.assertFalse(ruleSet.isCoherent());
     }
 
-    public static void testExclusiveAB_BC() {
+    public void testExclusiveAB_BC() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("b", "c");
@@ -33,7 +37,7 @@ public class ApplicationTest extends TestCase {
         Assert.assertFalse(ruleSet.isCoherent());
     }
 
-    public static void testDeepDeps() {
+    public void testDeepDeps() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("b", "c");
@@ -44,7 +48,7 @@ public class ApplicationTest extends TestCase {
         Assert.assertFalse(ruleSet.isCoherent());
     }
 
-    public static void testExclusiveAB_BC_CA_DE() {
+    public void testExclusiveAB_BC_CA_DE() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("b", "c");
@@ -74,7 +78,7 @@ public class ApplicationTest extends TestCase {
         Assert.assertTrue(selectedPackages.isSameWith(Set.of("g", "f")));
     }
 
-    public static void testAB_BC_Toggle() {
+    public void testAB_BC_Toggle() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("b", "c");
@@ -83,7 +87,7 @@ public class ApplicationTest extends TestCase {
         Assert.assertTrue(selectedPackages.isSameWith(Set.of("c")));
     }
 
-    public static void testAB_AC() {
+    public void testAB_AC() {
         RuleSet ruleSet = new RuleSet();
         ruleSet.addDep("a", "b");
         ruleSet.addDep("a", "c");
@@ -95,6 +99,77 @@ public class ApplicationTest extends TestCase {
         selectedPackages.toggle("e");
         selectedPackages.toggle("a");
         Assert.assertTrue(selectedPackages.isSameWith(Set.of("a", "c", "b")));
+    }
+
+    public void testMyCustomBigCoherentTree() {
+        RuleSet ruleSet = new RuleSet();
+        ruleSet.addDep("a", "c");
+        ruleSet.addDep("c", "d");
+        ruleSet.addDep("d", "f");
+        ruleSet.addDep("c", "e");
+        ruleSet.addDep("e", "f");
+        ruleSet.addDep("b", "c");
+        ruleSet.addDep("g", "k");
+        ruleSet.addDep("k", "s");
+        ruleSet.addDep("k", "m");
+        ruleSet.addDep("m", "r");
+        ruleSet.addDep("m", "o");
+        ruleSet.addDep("s", "c");
+        ruleSet.addConflict("a", "b");
+        ruleSet.addConflict("s", "b");
+        ruleSet.addConflict("a", "k");
+        ruleSet.addConflict("b", "g");
+        ruleSet.addConflict("a", "g");
+        ruleSet.addConflict("a", "o");
+        ruleSet.addConflict("a", "r");
+        ruleSet.addConflict("a", "m");
+        Assert.assertTrue(ruleSet.isCoherent());
+        ruleSet.addConflict("f", "g");
+        Assert.assertFalse(ruleSet.isCoherent());
+    }
+
+    public void testMyCustomWeb() {
+        RuleSet ruleSet = new RuleSet();
+        ruleSet.addDep("b", "a");
+        ruleSet.addDep("c", "a");
+        ruleSet.addDep("d", "a");
+        ruleSet.addDep("d", "e");
+        ruleSet.addDep("a", "e");
+        ruleSet.addDep("a", "f");
+        ruleSet.addConflict("b", "c");
+        ruleSet.addConflict("c", "d");
+        ruleSet.addConflict("b", "d");
+        Assert.assertTrue(ruleSet.isCoherent());
+
+        Packages selectedPackages = new Packages(ruleSet);
+        selectedPackages.toggle("a");
+        Assert.assertTrue(selectedPackages.isSameWith(Set.of("a", "f", "e")));
+        selectedPackages.toggle("c");
+        Assert.assertTrue(selectedPackages.isSameWith(Set.of("a", "f", "e", "c")));
+
+        ruleSet.addConflict("f", "d");
+        Assert.assertFalse(ruleSet.isCoherent());
+    }
+
+    public void testMyCustomX() {
+        RuleSet ruleSet = new RuleSet();
+        ruleSet.addDep("a", "b");
+        ruleSet.addDep("b", "c");
+        ruleSet.addDep("k", "d");
+        ruleSet.addDep("d", "c");
+        ruleSet.addDep("c", "e");
+        ruleSet.addDep("c", "f");
+        ruleSet.addConflict("b", "d");
+        Assert.assertTrue(ruleSet.isCoherent());
+
+        Packages selectedPackages = new Packages(ruleSet);
+        selectedPackages.toggle("a");
+        Assert.assertTrue(selectedPackages.isSameWith(Set.of("a", "b", "c", "e", "f")));
+        selectedPackages.toggle("k");
+        Assert.assertTrue(selectedPackages.isSameWith(Set.of("k", "d", "c", "e", "f")));
+
+        ruleSet.addConflict("e", "f");
+        Assert.assertFalse(ruleSet.isCoherent());
     }
 
 }

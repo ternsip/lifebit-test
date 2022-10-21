@@ -4,12 +4,13 @@ import java.util.*;
 /**
  * Set of dependency rules: dependencies and conflicts
  * Keeping dependency information as adjacency tree child -> parents, and parent -> children
- * Keeping conflicts as list of pairs (a,b)
+ * Keeping conflicts as list of pairs (a,b) and mapping: dependency -> set of conflicting
  */
 public class RuleSet {
 
     private final HashMap<String, Set<String>> depToParents = new HashMap<>();
     private final HashMap<String, Set<String>> depToChildren = new HashMap<>();
+    private final HashMap<String, Set<String>> depToConflicts = new HashMap<>();
     private final ArrayList<Conflict> conflicts = new ArrayList<>();
 
     public void addDep(String a, String b) {
@@ -23,6 +24,10 @@ public class RuleSet {
     public void addConflict(String a, String b) {
         if (a.equals(b)) throw new IllegalArgumentException("Can not conflict with itself");
         conflicts.add(new Conflict(a, b));
+        depToConflicts.computeIfAbsent(b, x -> new HashSet<>());
+        depToConflicts.computeIfAbsent(a, x -> new HashSet<>());
+        depToConflicts.get(b).add(a);
+        depToConflicts.get(a).add(b);
     }
 
     /**
@@ -71,46 +76,12 @@ public class RuleSet {
         return true;
     }
 
-    /**
-     * Return all children dependencies of specific dependency from dependencies list
-     * Implemented via DFS with stack
-     * Iterates via children graph
-     * @param targetDependencies is dependencies that should stay as root dependency (source)
-     * @return all dependant dependencies for the dependency list
-     */
-    public Set<String> getAllDependencies(Set<String> targetDependencies) {
-        Stack<String> stack = new Stack<>();
-        Set<String> used = new HashSet<>();
-        stack.addAll(targetDependencies);
-        while (!stack.isEmpty()) {
-            String top = stack.pop();
-            if (used.contains(top)) {
-                continue;
-            }
-            used.add(top);
-            stack.addAll(depToChildren.getOrDefault(top, Collections.emptySet()));
-        }
-        return used;
+    public HashMap<String, Set<String>> getDepToChildren() {
+        return depToChildren;
     }
 
-    /**
-     * Return the set of all directly conflicting dependencies
-     * @param dependencies original dependency set for conflict checks
-     * @return the whole set of all possible directly conflicting dependencies
-     */
-    public Set<String> getAllDirectlyConflictingDependencies(Set<String> dependencies) {
-        Set<String> conflictList = new HashSet<>();
-        for (String targetDependency : dependencies) {
-            for (Conflict conflict : conflicts) {
-                if (targetDependency.equals(conflict.a)) {
-                    conflictList.add(conflict.b);
-                }
-                if (targetDependency.equals(conflict.b)) {
-                    conflictList.add(conflict.a);
-                }
-            }
-        }
-        return conflictList;
+    public HashMap<String, Set<String>> getDepToConflicts() {
+        return depToConflicts;
     }
 
     private static class Conflict {
